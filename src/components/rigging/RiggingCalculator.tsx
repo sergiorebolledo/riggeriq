@@ -1,10 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { calculateRigging, type NormativeCode, type RiggingResult } from "@/lib/rigging-calculator";
+import {
+  calculateRigging,
+  type NormativeCode,
+  type RiggingInput,
+  type RiggingResult,
+} from "@/lib/rigging-calculator";
 import { NumberField } from "./NumberField";
 import { NormativeSelect } from "./NormativeSelect";
 import { RiggingResultCards } from "./RiggingResultCards";
+
+const GeneratePdfButton = dynamic(
+  () => import("./pdf/GeneratePdfButton").then((mod) => mod.GeneratePdfButton),
+  { ssr: false },
+);
 
 interface FormState {
   totalWeightKg: string;
@@ -42,7 +53,11 @@ export function RiggingCalculator() {
     onChange: (value: string) => setForm((prev) => ({ ...prev, [key]: value })),
   });
 
-  const { result, error } = useMemo(() => {
+  const { input, result, error } = useMemo((): {
+    input: RiggingInput | null;
+    result: RiggingResult | null;
+    error: string | null;
+  } => {
     const totalWeightKg = parsePositiveFloat(form.totalWeightKg);
     const numberOfLegs = parsePositiveFloat(form.numberOfLegs);
     const baseWidthM = parsePositiveFloat(form.baseWidthM);
@@ -60,27 +75,29 @@ export function RiggingCalculator() {
       slingWLLKg === null ||
       shackleWLLKg === null
     ) {
-      return { result: null, error: "Completa todos los campos con valores mayores a 0." };
+      return { input: null, result: null, error: "Completa todos los campos con valores mayores a 0." };
     }
 
     if (!Number.isInteger(numberOfLegs)) {
-      return { result: null, error: "El número de patas debe ser un número entero." };
+      return { input: null, result: null, error: "El número de patas debe ser un número entero." };
     }
 
+    const input: RiggingInput = {
+      totalWeightKg,
+      numberOfLegs,
+      baseWidthM,
+      baseLengthM,
+      slingLengthM,
+      slingWLLKg,
+      shackleWLLKg,
+      norm: form.norm,
+    };
+
     try {
-      const result = calculateRigging({
-        totalWeightKg,
-        numberOfLegs,
-        baseWidthM,
-        baseLengthM,
-        slingLengthM,
-        slingWLLKg,
-        shackleWLLKg,
-        norm: form.norm,
-      });
-      return { result, error: null };
+      const result = calculateRigging(input);
+      return { input, result, error: null };
     } catch (err) {
-      return { result: null, error: err instanceof Error ? err.message : "Datos inválidos." };
+      return { input: null, result: null, error: err instanceof Error ? err.message : "Datos inválidos." };
     }
   }, [form]);
 
@@ -135,12 +152,15 @@ export function RiggingCalculator() {
             {error}
           </div>
         )}
-        {result && (
-          <RiggingResultCards
-            result={result}
-            totalWeightKg={Number.parseFloat(form.totalWeightKg)}
-            numberOfLegs={Number.parseFloat(form.numberOfLegs)}
-          />
+        {input && result && (
+          <>
+            <RiggingResultCards
+              result={result}
+              totalWeightKg={input.totalWeightKg}
+              numberOfLegs={input.numberOfLegs}
+            />
+            <GeneratePdfButton input={input} result={result} />
+          </>
         )}
       </section>
     </div>
