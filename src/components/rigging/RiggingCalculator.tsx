@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  calculateBaseRadius,
+  calculateRequiredSlingLength,
   calculateRigging,
   type NormativeCode,
   type RiggingInput,
@@ -17,12 +19,15 @@ const GeneratePdfButton = dynamic(
   { ssr: false },
 );
 
+type CalculationMode = "length" | "angle";
+
 interface FormState {
   totalWeightKg: string;
   numberOfLegs: string;
   baseWidthM: string;
   baseLengthM: string;
   slingLengthM: string;
+  desiredAngleDegrees: string;
   slingWLLKg: string;
   shackleWLLKg: string;
   norm: NormativeCode;
@@ -36,6 +41,7 @@ const DEFAULT_FORM: FormState = {
   baseWidthM: "1.5",
   baseLengthM: "1.5",
   slingLengthM: "3",
+  desiredAngleDegrees: "60",
   slingWLLKg: "6000",
   shackleWLLKg: "6000",
   norm: "ASME",
@@ -70,6 +76,7 @@ const EXAMPLES: RiggingExample[] = [
       baseWidthM: "1",
       baseLengthM: "1",
       slingLengthM: "3",
+      desiredAngleDegrees: "60",
       slingWLLKg: "4000",
       shackleWLLKg: "4000",
       norm: "ASME",
@@ -84,26 +91,29 @@ function parsePositiveFloat(value: string): number | null {
 
 export function RiggingCalculator() {
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+  const [mode, setMode] = useState<CalculationMode>("length");
   const previousStatus = useRef<RiggingResult["status"] | null>(null);
 
   const setField = (key: NumericFormField) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const { input, result, error, invalidFields } = useMemo((): {
+  const { input, result, error, invalidFields, requiredSlingLengthM } = useMemo((): {
     input: RiggingInput | null;
     result: RiggingResult | null;
     error: string | null;
     invalidFields: Partial<Record<NumericFormField, boolean>>;
+    requiredSlingLengthM: number | null;
   } => {
-    const numericFields: NumericFormField[] = [
+    const baseFields: NumericFormField[] = [
       "totalWeightKg",
       "numberOfLegs",
       "baseWidthM",
       "baseLengthM",
-      "slingLengthM",
       "slingWLLKg",
       "shackleWLLKg",
     ];
+    const modeField: NumericFormField = mode === "length" ? "slingLengthM" : "desiredAngleDegrees";
+    const numericFields = [...baseFields, modeField];
 
     const parsed = Object.fromEntries(
       numericFields.map((key) => [key, parsePositiveFloat(form[key])]),
@@ -123,32 +133,45 @@ export function RiggingCalculator() {
         result: null,
         error: "Completa todos los campos con valores mayores a 0 (N° de patas debe ser entero).",
         invalidFields,
+        requiredSlingLengthM: null,
       };
     }
 
-    const input: RiggingInput = {
-      totalWeightKg: parsed.totalWeightKg!,
-      numberOfLegs: parsed.numberOfLegs!,
-      baseWidthM: parsed.baseWidthM!,
-      baseLengthM: parsed.baseLengthM!,
-      slingLengthM: parsed.slingLengthM!,
-      slingWLLKg: parsed.slingWLLKg!,
-      shackleWLLKg: parsed.shackleWLLKg!,
-      norm: form.norm,
-    };
-
     try {
+      let slingLengthM: number;
+      let requiredSlingLengthM: number | null = null;
+
+      if (mode === "length") {
+        slingLengthM = parsed.slingLengthM!;
+      } else {
+        const baseRadiusM = calculateBaseRadius(parsed.baseWidthM!, parsed.baseLengthM!);
+        slingLengthM = calculateRequiredSlingLength(baseRadiusM, parsed.desiredAngleDegrees!);
+        requiredSlingLengthM = slingLengthM;
+      }
+
+      const input: RiggingInput = {
+        totalWeightKg: parsed.totalWeightKg!,
+        numberOfLegs: parsed.numberOfLegs!,
+        baseWidthM: parsed.baseWidthM!,
+        baseLengthM: parsed.baseLengthM!,
+        slingLengthM,
+        slingWLLKg: parsed.slingWLLKg!,
+        shackleWLLKg: parsed.shackleWLLKg!,
+        norm: form.norm,
+      };
+
       const result = calculateRigging(input);
-      return { input, result, error: null, invalidFields: {} };
+      return { input, result, error: null, invalidFields: {}, requiredSlingLengthM };
     } catch (err) {
       return {
         input: null,
         result: null,
         error: err instanceof Error ? err.message : "Datos inválidos.",
         invalidFields: {},
+        requiredSlingLengthM: null,
       };
     }
-  }, [form]);
+  }, [form, mode]);
 
   useEffect(() => {
     if (
@@ -171,7 +194,10 @@ export function RiggingCalculator() {
           </h2>
           <button
             type="button"
-            onClick={() => setForm(DEFAULT_FORM)}
+            onClick={() => {
+              setForm(DEFAULT_FORM);
+              setMode("length");
+            }}
             className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
           >
             Restablecer
@@ -182,7 +208,10 @@ export function RiggingCalculator() {
             <button
               key={example.title}
               type="button"
-              onClick={() => setForm(example.form)}
+              onClick={() => {
+                setForm(example.form);
+                setMode("length");
+              }}
               className="flex flex-col items-start gap-1 rounded-xl border border-zinc-200 bg-white p-3 text-left transition-colors hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-500 dark:hover:bg-blue-950/30"
             >
               <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
@@ -198,9 +227,35 @@ export function RiggingCalculator() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <section className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            Datos de la maniobra
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              Datos de la maniobra
+            </h2>
+            <div className="flex rounded-lg border border-zinc-300 p-0.5 text-xs dark:border-zinc-700">
+              <button
+                type="button"
+                onClick={() => setMode("length")}
+                className={`rounded-md px-2 py-1 font-medium transition-colors ${
+                  mode === "length"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "text-zinc-500 dark:text-zinc-400"
+                }`}
+              >
+                Desde longitud
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("angle")}
+                className={`rounded-md px-2 py-1 font-medium transition-colors ${
+                  mode === "angle"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "text-zinc-500 dark:text-zinc-400"
+                }`}
+              >
+                Desde ángulo deseado
+              </button>
+            </div>
+          </div>
 
           <NormativeSelect
             value={form.norm}
@@ -247,14 +302,25 @@ export function RiggingCalculator() {
             />
           </div>
 
-          <NumberField
-            id="slingLengthM"
-            label="Longitud de eslinga"
-            unit="m"
-            value={form.slingLengthM}
-            onChange={setField("slingLengthM")}
-            invalid={invalidFields.slingLengthM}
-          />
+          {mode === "length" ? (
+            <NumberField
+              id="slingLengthM"
+              label="Longitud de eslinga"
+              unit="m"
+              value={form.slingLengthM}
+              onChange={setField("slingLengthM")}
+              invalid={invalidFields.slingLengthM}
+            />
+          ) : (
+            <NumberField
+              id="desiredAngleDegrees"
+              label="Ángulo deseado"
+              unit="°"
+              value={form.desiredAngleDegrees}
+              onChange={setField("desiredAngleDegrees")}
+              invalid={invalidFields.desiredAngleDegrees}
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <NumberField
@@ -283,6 +349,15 @@ export function RiggingCalculator() {
           {error && (
             <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
               {error}
+            </div>
+          )}
+          {requiredSlingLengthM !== null && (
+            <div className="rounded-xl border border-blue-300 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+              Longitud de eslinga requerida:{" "}
+              <span className="font-mono font-semibold">
+                {requiredSlingLengthM.toFixed(2)} m
+              </span>{" "}
+              para alcanzar {form.desiredAngleDegrees}°.
             </div>
           )}
           {input && result && (

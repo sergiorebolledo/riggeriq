@@ -3,6 +3,7 @@ import {
   NORMATIVE_PRESETS,
   calculateAmplificationFactor,
   calculateBaseRadius,
+  calculateRequiredSlingLength,
   calculateRigging,
   calculateSafetyFactor,
   calculateSlingAngle,
@@ -44,6 +45,28 @@ describe("calculateSlingAngle", () => {
 
   it("lanza un error si la longitud de la eslinga es 0 o negativa", () => {
     expect(() => calculateSlingAngle(1, 0)).toThrow();
+  });
+});
+
+describe("calculateRequiredSlingLength (modo inverso)", () => {
+  it("calcula la longitud requerida para un ángulo objetivo de 45°", () => {
+    // L = r / cos(45°) = r / 0.7071
+    const length = calculateRequiredSlingLength(Math.SQRT2, 45);
+    expect(length).toBeCloseTo(Math.SQRT2 / Math.cos(Math.PI / 4), 6);
+  });
+
+  it("es coherente con calculateSlingAngle (round-trip)", () => {
+    const r = 1.2;
+    const desiredAngle = 60;
+    const length = calculateRequiredSlingLength(r, desiredAngle);
+    const angleBack = calculateSlingAngle(r, length) * (180 / Math.PI);
+    expect(angleBack).toBeCloseTo(desiredAngle, 6);
+  });
+
+  it("lanza un error si el ángulo deseado está fuera de (0°, 90°)", () => {
+    expect(() => calculateRequiredSlingLength(1, 0)).toThrow();
+    expect(() => calculateRequiredSlingLength(1, 90)).toThrow();
+    expect(() => calculateRequiredSlingLength(1, 120)).toThrow();
   });
 });
 
@@ -121,6 +144,23 @@ describe("evaluateSafetyStatus", () => {
     expect(status).toBe("danger");
   });
 
+  it("agrega la advertencia absoluta de 30° independiente de la norma", () => {
+    const { warnings } = evaluateSafetyStatus(25, 6, 6, asme);
+    expect(warnings.some((w) => /mínimo absoluto de la industria/.test(w))).toBe(true);
+  });
+
+  it("no agrega la advertencia absoluta de 30° si el ángulo está sobre ese límite", () => {
+    const { warnings } = evaluateSafetyStatus(40, 6, 6, asme);
+    expect(warnings.some((w) => /mínimo absoluto de la industria/.test(w))).toBe(false);
+  });
+
+  it("clasifica como 'safe' un ángulo justo en el umbral de 60°, tolerando ruido de punto flotante", () => {
+    // 59.99999999999999 es el resultado real de un round-trip cos->acos
+    // para un ángulo objetivo de 60°; no debe caer a 'warning' por esto.
+    const { status } = evaluateSafetyStatus(59.99999999999999, 6, 6, asme);
+    expect(status).toBe("safe");
+  });
+
   it("agrega advertencias normativas específicas cuando no se cumple el mínimo de la norma", () => {
     // EN 1492 exige FS >= 7 para eslingas; con FS = 6 el estado global es 'safe'
     // (por los umbrales genéricos) pero debe reportarse el incumplimiento normativo.
@@ -150,6 +190,25 @@ describe("calculateRigging (integración)", () => {
     expect(result.slingAngleDegrees).toBeGreaterThan(60);
     expect(result.status).toBe("safe");
     expect(result.warnings).toHaveLength(0);
+  });
+
+  it("modo inverso: un ángulo objetivo de exactamente 60° no cae a 'warning' por ruido de punto flotante", () => {
+    const baseRadiusM = calculateBaseRadius(1.5, 1.5);
+    const slingLengthM = calculateRequiredSlingLength(baseRadiusM, 60);
+
+    const result = calculateRigging({
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      baseWidthM: 1.5,
+      baseLengthM: 1.5,
+      slingLengthM,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      norm: "ASME",
+    });
+
+    expect(result.slingAngleDegrees).toBeCloseTo(60, 6);
+    expect(result.status).toBe("safe");
   });
 
   it("marca 'danger' un izaje con ángulo bajo (arreglo muy abierto vs. eslinga corta)", () => {

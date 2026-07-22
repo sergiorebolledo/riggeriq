@@ -81,6 +81,21 @@ function toDegrees(radians: number): number {
   return (radians * 180) / Math.PI;
 }
 
+function toRadians(degrees: number): number {
+  return (degrees * Math.PI) / 180;
+}
+
+/** Ángulo absoluto mínimo por debajo del cual ninguna norma permite izar. */
+const ABSOLUTE_MIN_ANGLE_DEGREES = 30;
+
+/**
+ * Tolerancia para comparaciones de ángulo en grados. Evita que el
+ * redondeo de punto flotante (p. ej. un round-trip cos→acos al calcular
+ * la longitud requerida para un ángulo objetivo) clasifique por error un
+ * ángulo matemáticamente exacto como levemente bajo un umbral.
+ */
+const ANGLE_EPSILON_DEGREES = 1e-6;
+
 /**
  * Radio de la base del arreglo de anclajes (distancia del centro de carga
  * a cada punto de anclaje), para un arreglo rectangular simétrico.
@@ -110,6 +125,21 @@ export function calculateSlingAngle(baseRadiusM: number, slingLengthM: number): 
     );
   }
   return Math.acos(ratio);
+}
+
+/**
+ * Longitud de eslinga requerida para alcanzar un ángulo objetivo (modo inverso).
+ *
+ * A partir de cos(θ) = r / L  =>  L = r / cos(θ)
+ */
+export function calculateRequiredSlingLength(
+  baseRadiusM: number,
+  desiredAngleDegrees: number,
+): number {
+  if (desiredAngleDegrees <= 0 || desiredAngleDegrees >= 90) {
+    throw new Error("El ángulo deseado debe estar entre 0° y 90° (exclusivo).");
+  }
+  return baseRadiusM / Math.cos(toRadians(desiredAngleDegrees));
 }
 
 /**
@@ -171,16 +201,21 @@ export function evaluateSafetyStatus(
   const minFS = Math.min(slingSafetyFactor, shackleSafetyFactor);
 
   let status: SafetyStatus;
-  if (slingAngleDegrees < 45 || minFS < 4) {
+  if (slingAngleDegrees < 45 - ANGLE_EPSILON_DEGREES || minFS < 4) {
     status = "danger";
-  } else if (slingAngleDegrees < 60 || minFS < 5) {
+  } else if (slingAngleDegrees < 60 - ANGLE_EPSILON_DEGREES || minFS < 5) {
     status = "warning";
   } else {
     status = "safe";
   }
 
   const warnings: string[] = [];
-  if (slingAngleDegrees < norm.minSlingAngleDegrees) {
+  if (slingAngleDegrees < ABSOLUTE_MIN_ANGLE_DEGREES - ANGLE_EPSILON_DEGREES) {
+    warnings.push(
+      `Ángulo de eslinga (${slingAngleDegrees.toFixed(1)}°) bajo el mínimo absoluto de la industria (${ABSOLUTE_MIN_ANGLE_DEGREES}°): no usar la eslinga en esta configuración bajo ninguna norma.`,
+    );
+  }
+  if (slingAngleDegrees < norm.minSlingAngleDegrees - ANGLE_EPSILON_DEGREES) {
     warnings.push(
       `Ángulo de eslinga (${slingAngleDegrees.toFixed(1)}°) bajo el mínimo exigido por ${norm.label} (${norm.minSlingAngleDegrees}°).`,
     );
