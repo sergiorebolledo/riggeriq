@@ -55,8 +55,8 @@ export function RiggingResultCards({
 
       {result.warnings.length > 0 && (
         <ul className="flex flex-col gap-1 rounded-lg border border-zinc-300 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-          {result.warnings.map((warning) => (
-            <li key={warning} className="flex gap-2">
+          {result.warnings.map((warning, index) => (
+            <li key={index} className="flex gap-2">
               <span aria-hidden>⚠️</span>
               <span>{warning}</span>
             </li>
