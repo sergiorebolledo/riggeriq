@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { isClerkConfigured } from "@/lib/clerk-status";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,12 +25,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+  const body = (
+    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
+        <SiteHeader />
+        {children}
+      </body>
     </html>
   );
+
+  // Ver src/lib/clerk-status.ts: sin credenciales reales, <ClerkProvider>
+  // intenta cargar el SDK de Clerk desde un dominio inexistente y rompe
+  // toda la app (no solo las páginas con login). Se omite hasta que haya
+  // keys reales en .env.local.
+  return isClerkConfigured ? <ClerkProvider>{body}</ClerkProvider> : body;
 }

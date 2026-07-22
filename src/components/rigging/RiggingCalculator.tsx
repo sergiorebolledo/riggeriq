@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import dynamic from "next/dynamic";
+import { Lock } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   calculateBaseRadius,
@@ -10,6 +12,7 @@ import {
   type RiggingInput,
   type RiggingResult,
 } from "@/lib/rigging-calculator";
+import type { Plan } from "@/lib/profile";
 import { NumberField } from "./NumberField";
 import { NormativeSelect } from "./NormativeSelect";
 import { RiggingResultCards } from "./RiggingResultCards";
@@ -89,7 +92,11 @@ function parsePositiveFloat(value: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-export function RiggingCalculator() {
+interface RiggingCalculatorProps {
+  plan: Plan;
+}
+
+export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [mode, setMode] = useState<CalculationMode>("length");
   const previousStatus = useRef<RiggingResult["status"] | null>(null);
@@ -367,7 +374,17 @@ export function RiggingCalculator() {
                 totalWeightKg={input.totalWeightKg}
                 numberOfLegs={input.numberOfLegs}
               />
-              <GeneratePdfButton input={input} result={result} />
+              {plan === "pro" ? (
+                <GeneratePdfButton input={input} result={result} />
+              ) : (
+                <Link
+                  href="/precios"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 px-4 py-3 text-sm font-semibold text-zinc-500 transition-colors hover:border-blue-400 hover:text-blue-600 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+                >
+                  <Lock className="h-4 w-4" />
+                  Exportar PDF es un beneficio Pro — actualiza tu plan
+                </Link>
+              )}
             </>
           )}
         </section>

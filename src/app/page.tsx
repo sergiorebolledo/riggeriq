@@ -1,7 +1,10 @@
 import { RiggingCalculator } from "@/components/rigging/RiggingCalculator";
 import { CenterOfGravityCalculator } from "@/components/rigging/cog/CenterOfGravityCalculator";
+import { getCurrentPlan } from "@/lib/profile";
 
-export default function Home() {
+export default async function Home() {
+  const plan = await getCurrentPlan();
+
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 dark:bg-black">
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-10 px-4 py-8 sm:px-8">
@@ -14,7 +17,7 @@ export default function Home() {
           </p>
         </header>
 
-        <RiggingCalculator />
+        <RiggingCalculator plan={plan} />
 
         <section className="flex flex-col gap-3">
           <header>
