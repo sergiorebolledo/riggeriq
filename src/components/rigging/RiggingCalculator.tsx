@@ -5,17 +5,20 @@ import dynamic from "next/dynamic";
 import { Lock } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  HITCH_TYPES,
   calculateBaseRadius,
   calculateRequiredSlingLength,
   calculateRigging,
   type NormativeCode,
   type RiggingInput,
   type RiggingResult,
+  type SlingHitchType,
 } from "@/lib/rigging-calculator";
 import type { Plan } from "@/lib/profile";
 import type { ExtractedRiggingData } from "@/lib/ai-vision/types";
 import { NumberField } from "./NumberField";
 import { NormativeSelect } from "./NormativeSelect";
+import { HitchTypeSelect } from "./HitchTypeSelect";
 import { RiggingResultCards } from "./RiggingResultCards";
 import { EquipmentCatalogPicker } from "./EquipmentCatalogPicker";
 import { PhotoExtractButton } from "./vision/PhotoExtractButton";
@@ -30,26 +33,30 @@ type CalculationMode = "length" | "angle";
 interface FormState {
   totalWeightKg: string;
   numberOfLegs: string;
+  numberOfShackles: string;
   baseWidthM: string;
   baseLengthM: string;
   slingLengthM: string;
   desiredAngleDegrees: string;
   slingWLLKg: string;
   shackleWLLKg: string;
+  hitchType: SlingHitchType;
   norm: NormativeCode;
 }
 
-type NumericFormField = Exclude<keyof FormState, "norm">;
+type NumericFormField = Exclude<keyof FormState, "norm" | "hitchType">;
 
 const DEFAULT_FORM: FormState = {
   totalWeightKg: "4000",
   numberOfLegs: "4",
+  numberOfShackles: "4",
   baseWidthM: "1.5",
   baseLengthM: "1.5",
   slingLengthM: "3",
   desiredAngleDegrees: "60",
   slingWLLKg: "6000",
   shackleWLLKg: "6000",
+  hitchType: "vertical",
   norm: "ASME",
 };
 
@@ -79,12 +86,14 @@ const EXAMPLES: RiggingExample[] = [
     form: {
       totalWeightKg: "10000",
       numberOfLegs: "2",
+      numberOfShackles: "2",
       baseWidthM: "1",
       baseLengthM: "1",
       slingLengthM: "3",
       desiredAngleDegrees: "60",
       slingWLLKg: "4000",
       shackleWLLKg: "4000",
+      hitchType: "vertical",
       norm: "ASME",
     },
   },
@@ -129,6 +138,7 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
     const baseFields: NumericFormField[] = [
       "totalWeightKg",
       "numberOfLegs",
+      "numberOfShackles",
       "baseWidthM",
       "baseLengthM",
       "slingWLLKg",
@@ -148,12 +158,16 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
     if (parsed.numberOfLegs !== null && !Number.isInteger(parsed.numberOfLegs)) {
       invalidFields.numberOfLegs = true;
     }
+    if (parsed.numberOfShackles !== null && !Number.isInteger(parsed.numberOfShackles)) {
+      invalidFields.numberOfShackles = true;
+    }
 
     if (Object.keys(invalidFields).length > 0) {
       return {
         input: null,
         result: null,
-        error: "Completa todos los campos con valores mayores a 0 (N° de patas debe ser entero).",
+        error:
+          "Completa todos los campos con valores mayores a 0 (N° de patas y de grilletes deben ser enteros).",
         invalidFields,
         requiredSlingLengthM: null,
       };
@@ -174,11 +188,13 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
       const input: RiggingInput = {
         totalWeightKg: parsed.totalWeightKg!,
         numberOfLegs: parsed.numberOfLegs!,
+        numberOfShackles: parsed.numberOfShackles!,
         baseWidthM: parsed.baseWidthM!,
         baseLengthM: parsed.baseLengthM!,
         slingLengthM,
         slingWLLKg: parsed.slingWLLKg!,
         shackleWLLKg: parsed.shackleWLLKg!,
+        hitchType: form.hitchType,
         norm: form.norm,
       };
 
@@ -291,10 +307,16 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
             </Link>
           )}
 
-          <NormativeSelect
-            value={form.norm}
-            onChange={(norm) => setForm((prev) => ({ ...prev, norm }))}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <NormativeSelect
+              value={form.norm}
+              onChange={(norm) => setForm((prev) => ({ ...prev, norm }))}
+            />
+            <HitchTypeSelect
+              value={form.hitchType}
+              onChange={(hitchType) => setForm((prev) => ({ ...prev, hitchType }))}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <NumberField
@@ -314,6 +336,19 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
               value={form.numberOfLegs}
               onChange={setField("numberOfLegs")}
               invalid={invalidFields.numberOfLegs}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <NumberField
+              id="numberOfShackles"
+              label="N° de grilletes"
+              unit=""
+              min={1}
+              step={1}
+              value={form.numberOfShackles}
+              onChange={setField("numberOfShackles")}
+              invalid={invalidFields.numberOfShackles}
             />
           </div>
 
@@ -405,6 +440,8 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
                 result={result}
                 totalWeightKg={input.totalWeightKg}
                 numberOfLegs={input.numberOfLegs}
+                numberOfShackles={input.numberOfShackles}
+                hitchLabel={HITCH_TYPES[input.hitchType].label}
               />
               {plan === "pro" ? (
                 <GeneratePdfButton input={input} result={result} />

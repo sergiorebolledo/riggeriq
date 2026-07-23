@@ -46,21 +46,47 @@ export const NORMATIVE_PRESETS: Record<NormativeCode, NormativeLimits> = {
 
 export type SafetyStatus = "safe" | "warning" | "danger";
 
+export type SlingHitchType = "vertical" | "choker" | "basket";
+
+export interface HitchTypeInfo {
+  code: SlingHitchType;
+  label: string;
+  /** Factor sobre el WLL vertical/recto de la eslinga (ASME B30.9). */
+  capacityFactor: number;
+}
+
+/**
+ * Factores de capacidad por tipo de montaje de la eslinga (ASME B30.9):
+ * Vertical/Recta = 100% del WLL, Ahorcado (choker) = 80%, Canasta (basket)
+ * = 200% a 90°. El factor de canasta aquí es fijo (no varía con el ángulo
+ * de la brida): para un cálculo de canasta a un ángulo distinto de 90°,
+ * usar la tabla completa de ángulo vs. capacidad del fabricante.
+ */
+export const HITCH_TYPES: Record<SlingHitchType, HitchTypeInfo> = {
+  vertical: { code: "vertical", label: "Vertical / Recta", capacityFactor: 1.0 },
+  choker: { code: "choker", label: "Ahorcado (Choker)", capacityFactor: 0.8 },
+  basket: { code: "basket", label: "Canasta (Basket)", capacityFactor: 2.0 },
+};
+
 export interface RiggingInput {
   /** Peso total de la carga, en kg. */
   totalWeightKg: number;
   /** Número de patas/eslingas del arreglo (>= 1). */
   numberOfLegs: number;
+  /** Número de grilletes usados (independiente del número de patas). */
+  numberOfShackles: number;
   /** Ancho del arreglo de puntos de anclaje, en metros. */
   baseWidthM: number;
   /** Largo del arreglo de puntos de anclaje, en metros. */
   baseLengthM: number;
   /** Longitud de cada eslinga, en metros. */
   slingLengthM: number;
-  /** Carga de trabajo límite (WLL) de cada eslinga, en kg. */
+  /** Carga de trabajo límite (WLL) de cada eslinga, en kg (rating vertical/recto). */
   slingWLLKg: number;
   /** Carga de trabajo límite (WLL) de cada grillete, en kg. */
   shackleWLLKg: number;
+  /** Tipo de montaje de la eslinga: vertical, ahorcado o canasta. */
+  hitchType: SlingHitchType;
   /** Norma bajo la cual se evalúa la maniobra. */
   norm: NormativeCode;
 }
@@ -71,6 +97,8 @@ export interface RiggingResult {
   slingAngleDegrees: number;
   amplificationFactor: number;
   tensionPerLegKg: number;
+  /** WLL de la eslinga ya ajustado por el factor del tipo de montaje. */
+  effectiveSlingWLLKg: number;
   slingSafetyFactor: number;
   shackleSafetyFactor: number;
   status: SafetyStatus;
@@ -153,6 +181,12 @@ export function calculateAmplificationFactor(slingAngleRadians: number): number 
   return 1 / sinTheta;
 }
 
+function assertPositiveInteger(value: number, label: string): void {
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${label} debe ser un entero mayor o igual a 1.`);
+  }
+}
+
 /**
  * Tensión por eslinga: T = (Peso total / N° de patas) * FA
  */
@@ -164,9 +198,7 @@ export function calculateTensionPerLeg(
   if (totalWeightKg <= 0) {
     throw new Error("El peso total debe ser mayor que 0.");
   }
-  if (!Number.isInteger(numberOfLegs) || numberOfLegs < 1) {
-    throw new Error("El número de patas debe ser un entero mayor o igual a 1.");
-  }
+  assertPositiveInteger(numberOfLegs, "El número de patas");
   return (totalWeightKg / numberOfLegs) * amplificationFactor;
 }
 
@@ -240,6 +272,7 @@ export function evaluateSafetyStatus(
  */
 export function calculateRigging(input: RiggingInput): RiggingResult {
   const norm = NORMATIVE_PRESETS[input.norm];
+  assertPositiveInteger(input.numberOfShackles, "El número de grilletes");
 
   const baseRadiusM = calculateBaseRadius(input.baseWidthM, input.baseLengthM);
   const slingAngleRadians = calculateSlingAngle(baseRadiusM, input.slingLengthM);
@@ -250,7 +283,8 @@ export function calculateRigging(input: RiggingInput): RiggingResult {
     input.numberOfLegs,
     amplificationFactor,
   );
-  const slingSafetyFactor = calculateSafetyFactor(input.slingWLLKg, tensionPerLegKg);
+  const effectiveSlingWLLKg = input.slingWLLKg * HITCH_TYPES[input.hitchType].capacityFactor;
+  const slingSafetyFactor = calculateSafetyFactor(effectiveSlingWLLKg, tensionPerLegKg);
   const shackleSafetyFactor = calculateSafetyFactor(input.shackleWLLKg, tensionPerLegKg);
 
   const { status, warnings } = evaluateSafetyStatus(
@@ -266,6 +300,7 @@ export function calculateRigging(input: RiggingInput): RiggingResult {
     slingAngleDegrees,
     amplificationFactor,
     tensionPerLegKg,
+    effectiveSlingWLLKg,
     slingSafetyFactor,
     shackleSafetyFactor,
     status,

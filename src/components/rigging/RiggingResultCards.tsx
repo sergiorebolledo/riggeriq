@@ -29,12 +29,16 @@ interface RiggingResultCardsProps {
   result: RiggingResult;
   totalWeightKg: number;
   numberOfLegs: number;
+  numberOfShackles: number;
+  hitchLabel: string;
 }
 
 export function RiggingResultCards({
   result,
   totalWeightKg,
   numberOfLegs,
+  numberOfShackles,
+  hitchLabel,
 }: RiggingResultCardsProps) {
   const statusConfig = STATUS_CONFIG[result.status];
   const StatusIcon = statusConfig.icon;
@@ -79,6 +83,14 @@ export function RiggingResultCards({
               <dd className="font-mono font-medium">{numberOfLegs}</dd>
             </div>
             <div className="flex justify-between">
+              <dt className="text-zinc-600 dark:text-zinc-400">N° de grilletes</dt>
+              <dd className="font-mono font-medium">{numberOfShackles}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-zinc-600 dark:text-zinc-400">Montaje de eslinga</dt>
+              <dd className="font-medium">{hitchLabel}</dd>
+            </div>
+            <div className="flex justify-between">
               <dt className="text-zinc-600 dark:text-zinc-400">Radio de base</dt>
               <dd className="font-mono font-medium">{result.baseRadiusM.toFixed(2)} m</dd>
             </div>
@@ -101,6 +113,10 @@ export function RiggingResultCards({
             <div className="flex justify-between">
               <dt className="text-zinc-600 dark:text-zinc-400">Tensión por eslinga (T)</dt>
               <dd className="font-mono font-medium">{result.tensionPerLegKg.toFixed(1)} kg</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-zinc-600 dark:text-zinc-400">WLL eslinga efectivo</dt>
+              <dd className="font-mono font-medium">{result.effectiveSlingWLLKg.toFixed(0)} kg</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-600 dark:text-zinc-400">FS eslinga</dt>

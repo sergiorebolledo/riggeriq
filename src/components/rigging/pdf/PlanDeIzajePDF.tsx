@@ -1,5 +1,6 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import {
+  HITCH_TYPES,
   NORMATIVE_PRESETS,
   type RiggingInput,
   type RiggingResult,
@@ -175,6 +176,14 @@ export function PlanDeIzajePDF({ input, result, generatedAt }: PlanDeIzajePDFPro
               <Text style={styles.tableCellValue}>{input.numberOfLegs}</Text>
             </View>
             <View style={styles.tableRow}>
+              <Text style={styles.tableCellLabel}>N° de grilletes</Text>
+              <Text style={styles.tableCellValue}>{input.numberOfShackles}</Text>
+            </View>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableCellLabel}>Montaje de la eslinga</Text>
+              <Text style={styles.tableCellValue}>{HITCH_TYPES[input.hitchType].label}</Text>
+            </View>
+            <View style={styles.tableRow}>
               <Text style={styles.tableCellLabel}>Dimensiones del arreglo de anclajes</Text>
               <Text style={styles.tableCellValue}>
                 {input.baseWidthM} m × {input.baseLengthM} m
@@ -185,7 +194,7 @@ export function PlanDeIzajePDF({ input, result, generatedAt }: PlanDeIzajePDFPro
               <Text style={styles.tableCellValue}>{input.slingLengthM} m</Text>
             </View>
             <View style={styles.tableRow}>
-              <Text style={styles.tableCellLabel}>WLL eslinga</Text>
+              <Text style={styles.tableCellLabel}>WLL eslinga (vertical/recto)</Text>
               <Text style={styles.tableCellValue}>
                 {input.slingWLLKg.toLocaleString("es-CL")} kg
               </Text>
@@ -223,7 +232,13 @@ export function PlanDeIzajePDF({ input, result, generatedAt }: PlanDeIzajePDFPro
               <Text style={styles.tableCellValue}>{result.tensionPerLegKg.toFixed(1)} kg</Text>
             </View>
             <View style={styles.tableRow}>
-              <Text style={styles.tableCellLabel}>Factor de seguridad eslinga: FS = WLL / T</Text>
+              <Text style={styles.tableCellLabel}>
+                WLL eslinga efectivo (× {(HITCH_TYPES[input.hitchType].capacityFactor * 100).toFixed(0)}% por montaje)
+              </Text>
+              <Text style={styles.tableCellValue}>{result.effectiveSlingWLLKg.toFixed(1)} kg</Text>
+            </View>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableCellLabel}>Factor de seguridad eslinga: FS = WLL efectivo / T</Text>
               <Text style={styles.tableCellValue}>{result.slingSafetyFactor.toFixed(2)}</Text>
             </View>
             <View style={styles.tableRowLast}>

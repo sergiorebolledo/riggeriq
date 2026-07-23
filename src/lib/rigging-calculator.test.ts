@@ -177,11 +177,13 @@ describe("calculateRigging (integración)", () => {
     const result = calculateRigging({
       totalWeightKg: 4000,
       numberOfLegs: 4,
+      numberOfShackles: 4,
       baseWidthM: 1,
       baseLengthM: 1,
       slingLengthM: 4,
       slingWLLKg: 6000,
       shackleWLLKg: 6000,
+      hitchType: "vertical",
       norm: "ASME",
     });
 
@@ -199,11 +201,13 @@ describe("calculateRigging (integración)", () => {
     const result = calculateRigging({
       totalWeightKg: 4000,
       numberOfLegs: 4,
+      numberOfShackles: 4,
       baseWidthM: 1.5,
       baseLengthM: 1.5,
       slingLengthM,
       slingWLLKg: 6000,
       shackleWLLKg: 6000,
+      hitchType: "vertical",
       norm: "ASME",
     });
 
@@ -215,11 +219,13 @@ describe("calculateRigging (integración)", () => {
     const result = calculateRigging({
       totalWeightKg: 4000,
       numberOfLegs: 4,
+      numberOfShackles: 4,
       baseWidthM: 6,
       baseLengthM: 6,
       slingLengthM: 5,
       slingWLLKg: 5000,
       shackleWLLKg: 5000,
+      hitchType: "vertical",
       norm: "ASME",
     });
 
@@ -232,11 +238,13 @@ describe("calculateRigging (integración)", () => {
     const result = calculateRigging({
       totalWeightKg: 10000,
       numberOfLegs: 2,
+      numberOfShackles: 2,
       baseWidthM: 1,
       baseLengthM: 1,
       slingLengthM: 3,
       slingWLLKg: 4000,
       shackleWLLKg: 4000,
+      hitchType: "vertical",
       norm: "ASME",
     });
 
@@ -248,11 +256,13 @@ describe("calculateRigging (integración)", () => {
     const result = calculateRigging({
       totalWeightKg: 4000,
       numberOfLegs: 4,
+      numberOfShackles: 4,
       baseWidthM: 1,
       baseLengthM: 1,
       slingLengthM: 4,
       slingWLLKg: 6000,
       shackleWLLKg: 6000,
+      hitchType: "vertical",
       norm: "EN",
     });
 
@@ -265,14 +275,104 @@ describe("calculateRigging (integración)", () => {
       calculateRigging({
         totalWeightKg: 1000,
         numberOfLegs: 4,
+        numberOfShackles: 4,
         baseWidthM: 10,
         baseLengthM: 10,
         slingLengthM: 2,
         slingWLLKg: 3000,
         shackleWLLKg: 3000,
+        hitchType: "vertical",
         norm: "ASME",
       }),
     ).toThrow();
+  });
+
+  it("el montaje en ahorcado (choker) reduce el WLL efectivo al 80%", () => {
+    const base = {
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      numberOfShackles: 4,
+      baseWidthM: 1,
+      baseLengthM: 1,
+      slingLengthM: 4,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      norm: "ASME" as const,
+    };
+
+    const vertical = calculateRigging({ ...base, hitchType: "vertical" });
+    const choker = calculateRigging({ ...base, hitchType: "choker" });
+
+    expect(choker.effectiveSlingWLLKg).toBeCloseTo(vertical.effectiveSlingWLLKg * 0.8, 6);
+    expect(choker.slingSafetyFactor).toBeCloseTo(vertical.slingSafetyFactor * 0.8, 6);
+  });
+
+  it("el montaje en canasta (basket) duplica el WLL efectivo", () => {
+    const base = {
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      numberOfShackles: 4,
+      baseWidthM: 1,
+      baseLengthM: 1,
+      slingLengthM: 4,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      norm: "ASME" as const,
+    };
+
+    const vertical = calculateRigging({ ...base, hitchType: "vertical" });
+    const basket = calculateRigging({ ...base, hitchType: "basket" });
+
+    expect(basket.effectiveSlingWLLKg).toBeCloseTo(vertical.effectiveSlingWLLKg * 2, 6);
+  });
+
+  it("el número de grilletes distinto al número de patas no afecta la tensión ni el FS del grillete", () => {
+    const withMatchingShackles = calculateRigging({
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      numberOfShackles: 4,
+      baseWidthM: 1,
+      baseLengthM: 1,
+      slingLengthM: 4,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      hitchType: "vertical",
+      norm: "ASME",
+    });
+    const withExtraShackles = calculateRigging({
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      numberOfShackles: 8,
+      baseWidthM: 1,
+      baseLengthM: 1,
+      slingLengthM: 4,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      hitchType: "vertical",
+      norm: "ASME",
+    });
+
+    expect(withExtraShackles.tensionPerLegKg).toBeCloseTo(withMatchingShackles.tensionPerLegKg, 6);
+    expect(withExtraShackles.shackleSafetyFactor).toBeCloseTo(
+      withMatchingShackles.shackleSafetyFactor,
+      6,
+    );
+  });
+
+  it("lanza un error si el número de grilletes no es un entero positivo", () => {
+    const base = {
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      baseWidthM: 1,
+      baseLengthM: 1,
+      slingLengthM: 4,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      hitchType: "vertical" as const,
+      norm: "ASME" as const,
+    };
+    expect(() => calculateRigging({ ...base, numberOfShackles: 0 })).toThrow();
+    expect(() => calculateRigging({ ...base, numberOfShackles: 2.5 })).toThrow();
   });
 });
 
