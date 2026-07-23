@@ -9,6 +9,7 @@ import {
   type ShapeInput,
   type ShapeType,
 } from "@/lib/weight-estimator";
+import { GeometryDiagram } from "./GeometryDiagram";
 
 function buildShapeInput(shape: ShapeType, dimensions: Record<string, number>): ShapeInput {
   switch (shape) {
@@ -156,6 +157,10 @@ export function WeightEstimatorCalculator() {
     }
   }, [shape, material, values]);
 
+  const numericValues = Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [key, Number.parseFloat(value)]),
+  );
+
   async function handleCopy() {
     if (!result) return;
     try {
@@ -214,6 +219,10 @@ export function WeightEstimatorCalculator() {
               />
             </label>
           ))}
+        </div>
+
+        <div className="flex justify-center rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+          <GeometryDiagram shape={shape} dimensions={numericValues} />
         </div>
       </div>
 
