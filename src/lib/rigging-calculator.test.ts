@@ -307,7 +307,7 @@ describe("calculateRigging (integración)", () => {
     expect(choker.slingSafetyFactor).toBeCloseTo(vertical.slingSafetyFactor * 0.8, 6);
   });
 
-  it("el montaje en canasta (basket) duplica el WLL efectivo", () => {
+  it("el montaje en canasta (basket) aplica el factor 2·sin(θ) del ángulo real", () => {
     const base = {
       totalWeightKg: 4000,
       numberOfLegs: 4,
@@ -320,10 +320,73 @@ describe("calculateRigging (integración)", () => {
       norm: "ASME" as const,
     };
 
-    const vertical = calculateRigging({ ...base, hitchType: "vertical" });
     const basket = calculateRigging({ ...base, hitchType: "basket" });
 
-    expect(basket.effectiveSlingWLLKg).toBeCloseTo(vertical.effectiveSlingWLLKg * 2, 6);
+    // θ ≈ 79.8°, por lo tanto el factor de canasta es 2·sin(79.8°) ≈ 1.9696, no 2.0 exacto.
+    const expectedFactor = 2 * Math.sin(basket.slingAngleRadians);
+    expect(basket.hitchCapacityFactor).toBeCloseTo(expectedFactor, 6);
+    expect(basket.hitchCapacityFactor).toBeLessThan(2);
+    expect(basket.effectiveSlingWLLKg).toBeCloseTo(6000 * expectedFactor, 6);
+  });
+
+  it("el factor de canasta baja junto con el ángulo (más cerrado = menos capacidad)", () => {
+    const wideAngle = calculateRigging({
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      numberOfShackles: 4,
+      baseWidthM: 1,
+      baseLengthM: 1,
+      slingLengthM: 4,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      hitchType: "basket",
+      norm: "ASME",
+    });
+    const narrowAngle = calculateRigging({
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      numberOfShackles: 4,
+      baseWidthM: 1.5,
+      baseLengthM: 1.5,
+      slingLengthM: 1.8,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      hitchType: "basket",
+      norm: "ASME",
+    });
+
+    expect(narrowAngle.slingAngleDegrees).toBeLessThan(wideAngle.slingAngleDegrees);
+    expect(narrowAngle.hitchCapacityFactor).toBeLessThan(wideAngle.hitchCapacityFactor);
+  });
+
+  it("vertical y ahorcado mantienen un factor fijo sin importar el ángulo", () => {
+    const steep = calculateRigging({
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      numberOfShackles: 4,
+      baseWidthM: 1,
+      baseLengthM: 1,
+      slingLengthM: 4,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      hitchType: "choker",
+      norm: "ASME",
+    });
+    const shallow = calculateRigging({
+      totalWeightKg: 4000,
+      numberOfLegs: 4,
+      numberOfShackles: 4,
+      baseWidthM: 1.5,
+      baseLengthM: 1.5,
+      slingLengthM: 1.8,
+      slingWLLKg: 6000,
+      shackleWLLKg: 6000,
+      hitchType: "choker",
+      norm: "ASME",
+    });
+
+    expect(steep.hitchCapacityFactor).toBeCloseTo(0.8, 6);
+    expect(shallow.hitchCapacityFactor).toBeCloseTo(0.8, 6);
   });
 
   it("el número de grilletes distinto al número de patas no afecta la tensión ni el FS del grillete", () => {

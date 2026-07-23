@@ -115,7 +115,9 @@ export function RiggingResultCards({
               <dd className="font-mono font-medium">{result.tensionPerLegKg.toFixed(1)} kg</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-zinc-600 dark:text-zinc-400">WLL eslinga efectivo</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">
+                WLL eslinga efectivo ({(result.hitchCapacityFactor * 100).toFixed(0)}%)
+              </dt>
               <dd className="font-mono font-medium">{result.effectiveSlingWLLKg.toFixed(0)} kg</dd>
             </div>
             <div className="flex justify-between">

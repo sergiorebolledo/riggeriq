@@ -19,7 +19,11 @@ export function HitchTypeSelect({ value, onChange }: HitchTypeSelectProps) {
       >
         {Object.values(HITCH_TYPES).map((hitch) => (
           <option key={hitch.code} value={hitch.code}>
-            {hitch.label} ({(hitch.capacityFactor * 100).toFixed(0)}% WLL)
+            {hitch.label} (
+            {hitch.code === "basket"
+              ? `hasta ${(hitch.referenceCapacityFactor * 100).toFixed(0)}% WLL según ángulo`
+              : `${(hitch.referenceCapacityFactor * 100).toFixed(0)}% WLL`}
+            )
           </option>
         ))}
       </select>

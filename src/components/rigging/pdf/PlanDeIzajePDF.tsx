@@ -233,7 +233,8 @@ export function PlanDeIzajePDF({ input, result, generatedAt }: PlanDeIzajePDFPro
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableCellLabel}>
-                WLL eslinga efectivo (× {(HITCH_TYPES[input.hitchType].capacityFactor * 100).toFixed(0)}% por montaje)
+                WLL eslinga efectivo (× {(result.hitchCapacityFactor * 100).toFixed(0)}% por montaje
+                {input.hitchType === "basket" ? " en canasta, según ángulo" : ""})
               </Text>
               <Text style={styles.tableCellValue}>{result.effectiveSlingWLLKg.toFixed(1)} kg</Text>
             </View>

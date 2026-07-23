@@ -51,22 +51,41 @@ export type SlingHitchType = "vertical" | "choker" | "basket";
 export interface HitchTypeInfo {
   code: SlingHitchType;
   label: string;
-  /** Factor sobre el WLL vertical/recto de la eslinga (ASME B30.9). */
-  capacityFactor: number;
+  /**
+   * Factor de referencia sobre el WLL vertical/recto de la eslinga (ASME
+   * B30.9), a modo de etiqueta (ej. "200% a 90°"). El factor REAL usado en
+   * el cálculo se obtiene con calculateHitchCapacityFactor: para canasta
+   * varía con el ángulo de la eslinga, no es fijo.
+   */
+  referenceCapacityFactor: number;
 }
 
 /**
  * Factores de capacidad por tipo de montaje de la eslinga (ASME B30.9):
- * Vertical/Recta = 100% del WLL, Ahorcado (choker) = 80%, Canasta (basket)
- * = 200% a 90°. El factor de canasta aquí es fijo (no varía con el ángulo
- * de la brida): para un cálculo de canasta a un ángulo distinto de 90°,
- * usar la tabla completa de ángulo vs. capacidad del fabricante.
+ * Vertical/Recta = 100% del WLL, Ahorcado (choker) = 80% (fijos, no
+ * dependen del ángulo). Canasta (basket) = 2·sin(θ): a 90° da 200%, y baja
+ * junto con el ángulo de la eslinga, igual que ocurre con la tensión.
  */
 export const HITCH_TYPES: Record<SlingHitchType, HitchTypeInfo> = {
-  vertical: { code: "vertical", label: "Vertical / Recta", capacityFactor: 1.0 },
-  choker: { code: "choker", label: "Ahorcado (Choker)", capacityFactor: 0.8 },
-  basket: { code: "basket", label: "Canasta (Basket)", capacityFactor: 2.0 },
+  vertical: { code: "vertical", label: "Vertical / Recta", referenceCapacityFactor: 1.0 },
+  choker: { code: "choker", label: "Ahorcado (Choker)", referenceCapacityFactor: 0.8 },
+  basket: { code: "basket", label: "Canasta (Basket)", referenceCapacityFactor: 2.0 },
 };
+
+/**
+ * Factor de capacidad realmente aplicado para un tipo de montaje, dado el
+ * ángulo de la eslinga (en radianes). Vertical y ahorcado son fijos;
+ * canasta es angular: factor = 2·sin(θ).
+ */
+export function calculateHitchCapacityFactor(
+  hitchType: SlingHitchType,
+  slingAngleRadians: number,
+): number {
+  if (hitchType === "basket") {
+    return 2 * Math.sin(slingAngleRadians);
+  }
+  return HITCH_TYPES[hitchType].referenceCapacityFactor;
+}
 
 export interface RiggingInput {
   /** Peso total de la carga, en kg. */
@@ -97,6 +116,8 @@ export interface RiggingResult {
   slingAngleDegrees: number;
   amplificationFactor: number;
   tensionPerLegKg: number;
+  /** Factor de capacidad realmente aplicado según el tipo de montaje y el ángulo. */
+  hitchCapacityFactor: number;
   /** WLL de la eslinga ya ajustado por el factor del tipo de montaje. */
   effectiveSlingWLLKg: number;
   slingSafetyFactor: number;
@@ -283,7 +304,8 @@ export function calculateRigging(input: RiggingInput): RiggingResult {
     input.numberOfLegs,
     amplificationFactor,
   );
-  const effectiveSlingWLLKg = input.slingWLLKg * HITCH_TYPES[input.hitchType].capacityFactor;
+  const hitchCapacityFactor = calculateHitchCapacityFactor(input.hitchType, slingAngleRadians);
+  const effectiveSlingWLLKg = input.slingWLLKg * hitchCapacityFactor;
   const slingSafetyFactor = calculateSafetyFactor(effectiveSlingWLLKg, tensionPerLegKg);
   const shackleSafetyFactor = calculateSafetyFactor(input.shackleWLLKg, tensionPerLegKg);
 
@@ -300,6 +322,7 @@ export function calculateRigging(input: RiggingInput): RiggingResult {
     slingAngleDegrees,
     amplificationFactor,
     tensionPerLegKg,
+    hitchCapacityFactor,
     effectiveSlingWLLKg,
     slingSafetyFactor,
     shackleSafetyFactor,
