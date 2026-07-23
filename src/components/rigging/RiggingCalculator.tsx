@@ -30,6 +30,15 @@ const GeneratePdfButton = dynamic(
 
 type CalculationMode = "length" | "angle";
 
+/**
+ * Ancho interno usado cuando la carga NO tiene orejas de izaje (ej.
+ * tubería con puntos de amarre en línea): al hacer baseWidthM ≈ 0, el
+ * radio de base r = √((ancho/2)² + (largo/2)²) se reduce a largo/2, que
+ * es exactamente la geometría de dos puntos de amarre alineados a lo
+ * largo del objeto. No puede ser exactamente 0 (el motor exige > 0).
+ */
+const NO_LUGS_WIDTH_M = "0.001";
+
 interface FormState {
   totalWeightKg: string;
   numberOfLegs: string;
@@ -111,10 +120,19 @@ interface RiggingCalculatorProps {
 export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [mode, setMode] = useState<CalculationMode>("length");
+  const [hasLugs, setHasLugs] = useState(true);
   const previousStatus = useRef<RiggingResult["status"] | null>(null);
 
   const setField = (key: NumericFormField) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  function handleHasLugsChange(nextHasLugs: boolean) {
+    setHasLugs(nextHasLugs);
+    setForm((prev) => ({
+      ...prev,
+      baseWidthM: nextHasLugs ? DEFAULT_FORM.baseWidthM : NO_LUGS_WIDTH_M,
+    }));
+  }
 
   function handleExtracted(data: ExtractedRiggingData) {
     setForm((prev) => ({
@@ -235,6 +253,7 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
             onClick={() => {
               setForm(DEFAULT_FORM);
               setMode("length");
+              setHasLugs(true);
             }}
             className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
           >
@@ -249,6 +268,7 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
               onClick={() => {
                 setForm(example.form);
                 setMode("length");
+                setHasLugs(true);
               }}
               className="flex flex-col items-start gap-1 rounded-xl border border-zinc-200 bg-white p-3 text-left transition-colors hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-500 dark:hover:bg-blue-950/30"
             >
@@ -329,7 +349,7 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
             />
             <NumberField
               id="numberOfLegs"
-              label="N° de patas"
+              label={hasLugs ? "N° de patas" : "N° de puntos de amarre"}
               unit=""
               min={1}
               step={1}
@@ -352,23 +372,63 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <NumberField
-              id="baseWidthM"
-              label="Ancho de orejas (X)"
-              unit="m"
-              value={form.baseWidthM}
-              onChange={setField("baseWidthM")}
-              invalid={invalidFields.baseWidthM}
-            />
-            <NumberField
-              id="baseLengthM"
-              label="Largo de orejas (Y)"
-              unit="m"
-              value={form.baseLengthM}
-              onChange={setField("baseLengthM")}
-              invalid={invalidFields.baseLengthM}
-            />
+          <div className="flex flex-col gap-2 rounded-lg border border-dashed border-zinc-300 p-3 dark:border-zinc-700">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                ¿La carga tiene orejas de izaje?
+              </span>
+              <div className="flex rounded-lg border border-zinc-300 p-0.5 text-xs dark:border-zinc-700">
+                <button
+                  type="button"
+                  onClick={() => handleHasLugsChange(true)}
+                  className={`rounded-md px-2 py-1 font-medium transition-colors ${
+                    hasLugs
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                      : "text-zinc-500 dark:text-zinc-400"
+                  }`}
+                >
+                  Sí
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleHasLugsChange(false)}
+                  className={`rounded-md px-2 py-1 font-medium transition-colors ${
+                    !hasLugs
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                      : "text-zinc-500 dark:text-zinc-400"
+                  }`}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+            {!hasLugs && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Para tubería u objetos sin orejas: modela puntos de amarre (ahorcados) en línea a
+                lo largo del objeto.
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              {hasLugs && (
+                <NumberField
+                  id="baseWidthM"
+                  label="Ancho de orejas (X)"
+                  unit="m"
+                  value={form.baseWidthM}
+                  onChange={setField("baseWidthM")}
+                  invalid={invalidFields.baseWidthM}
+                />
+              )}
+              <NumberField
+                id="baseLengthM"
+                label={hasLugs ? "Largo de orejas (Y)" : "Distancia entre puntos de amarre"}
+                unit="m"
+                value={form.baseLengthM}
+                onChange={setField("baseLengthM")}
+                invalid={invalidFields.baseLengthM}
+              />
+            </div>
           </div>
 
           {mode === "length" ? (
