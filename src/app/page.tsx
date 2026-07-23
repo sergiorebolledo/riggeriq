@@ -1,5 +1,6 @@
 import { RiggingCalculator } from "@/components/rigging/RiggingCalculator";
 import { CenterOfGravityCalculator } from "@/components/rigging/cog/CenterOfGravityCalculator";
+import { WeightEstimatorCalculator } from "@/components/rigging/weight/WeightEstimatorCalculator";
 import { getCurrentPlan } from "@/lib/profile";
 
 export default async function Home() {
@@ -16,6 +17,18 @@ export default async function Home() {
             Ángulos, tensiones y factores de seguridad de tu maniobra de izaje, en tiempo real.
           </p>
         </header>
+
+        <section className="flex flex-col gap-3">
+          <header>
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+              Calculadora de Peso de Cargas
+            </h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Estima el peso a partir de la geometría y el material, antes de calcular el izaje.
+            </p>
+          </header>
+          <WeightEstimatorCalculator />
+        </section>
 
         <RiggingCalculator plan={plan} />
 
