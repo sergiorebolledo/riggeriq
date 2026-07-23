@@ -13,10 +13,12 @@ import {
   type RiggingResult,
 } from "@/lib/rigging-calculator";
 import type { Plan } from "@/lib/profile";
+import type { ExtractedRiggingData } from "@/lib/ai-vision/types";
 import { NumberField } from "./NumberField";
 import { NormativeSelect } from "./NormativeSelect";
 import { RiggingResultCards } from "./RiggingResultCards";
 import { EquipmentCatalogPicker } from "./EquipmentCatalogPicker";
+import { PhotoExtractButton } from "./vision/PhotoExtractButton";
 
 const GeneratePdfButton = dynamic(
   () => import("./pdf/GeneratePdfButton").then((mod) => mod.GeneratePdfButton),
@@ -104,6 +106,18 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
 
   const setField = (key: NumericFormField) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  function handleExtracted(data: ExtractedRiggingData) {
+    setForm((prev) => ({
+      ...prev,
+      ...(data.totalWeightKg != null && { totalWeightKg: String(data.totalWeightKg) }),
+      ...(data.numberOfLegs != null && { numberOfLegs: String(data.numberOfLegs) }),
+      ...(data.baseWidthM != null && { baseWidthM: String(data.baseWidthM) }),
+      ...(data.baseLengthM != null && { baseLengthM: String(data.baseLengthM) }),
+      ...(data.slingLengthM != null && { slingLengthM: String(data.slingLengthM) }),
+    }));
+    setMode("length");
+  }
 
   const { input, result, error, invalidFields, requiredSlingLengthM } = useMemo((): {
     input: RiggingInput | null;
@@ -264,6 +278,18 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
               </button>
             </div>
           </div>
+
+          {plan === "pro" ? (
+            <PhotoExtractButton onExtracted={handleExtracted} />
+          ) : (
+            <Link
+              href="/precios"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 px-4 py-3 text-sm font-semibold text-zinc-500 transition-colors hover:border-blue-400 hover:text-blue-600 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+            >
+              <Lock className="h-4 w-4" />
+              Leer plano con IA es un beneficio Pro — actualiza tu plan
+            </Link>
+          )}
 
           <NormativeSelect
             value={form.norm}
