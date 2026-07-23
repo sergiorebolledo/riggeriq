@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Check } from "lucide-react";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { getCurrentPlan } from "@/lib/profile";
@@ -5,6 +6,12 @@ import { isClerkConfigured } from "@/lib/clerk-status";
 import { UpgradeToProButton } from "@/components/billing/UpgradeToProButton";
 import { ManageBillingButton } from "@/components/billing/ManageBillingButton";
 import { SignInTriggerButton } from "@/components/auth/SignInTriggerButton";
+
+export const metadata: Metadata = {
+  title: "Planes y precios",
+  description:
+    "Plan Free con calculadoras ilimitadas en el navegador, y plan Pro con exportación de PDF y lectura de planos por IA.",
+};
 
 const FREE_FEATURES = [
   "Calculadora de ángulos, tensiones y factores de seguridad",

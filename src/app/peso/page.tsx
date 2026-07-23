@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import { WeightEstimatorCalculator } from "@/components/rigging/weight/WeightEstimatorCalculator";
+
+export const metadata: Metadata = {
+  title: "Calculadora de Peso de Cargas",
+  description:
+    "Estima el peso de una carga por geometría (cilindro, tubería, placa, viga H/I, contenedor, bloque) y material (acero, hormigón, agua, madera, cobre), con diagrama en vivo.",
+};
 
 export default function PesoPage() {
   return (

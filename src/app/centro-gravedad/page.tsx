@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import { CenterOfGravityCalculator } from "@/components/rigging/cog/CenterOfGravityCalculator";
+
+export const metadata: Metadata = {
+  title: "Calculadora de Centro de Gravedad",
+  description:
+    "Estima el punto de balance de una carga asimétrica compuesta por varios componentes de distinto peso y posición.",
+};
 
 export default function CentroGravedadPage() {
   return (

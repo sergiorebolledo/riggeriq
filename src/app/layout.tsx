@@ -17,9 +17,29 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const SITE_NAME = "Rigging Pro AI";
+const SITE_DESCRIPTION =
+  "Calculadora de ingeniería de izaje: ángulos, tensiones, factores de seguridad, peso de cargas y centro de gravedad. Cumple ASME B30.9/B30.26, EN 1492/13889 y NCh/DS 594.";
+
 export const metadata: Metadata = {
-  title: "Rigging Pro AI",
-  description: "Calculadora de ingeniería de izaje: ángulos, tensiones y factores de seguridad.",
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "calculadora de izaje",
+    "rigging calculator",
+    "eslingas",
+    "grilletes",
+    "factor de seguridad izaje",
+    "ASME B30.9",
+    "plan de izaje seguro",
+    "centro de gravedad carga",
+    "calculadora de peso de carga",
+  ],
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -27,6 +47,23 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: "/icons/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_CL",
+    url: APP_URL,
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
