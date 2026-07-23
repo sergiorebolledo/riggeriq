@@ -16,6 +16,7 @@ import type { Plan } from "@/lib/profile";
 import { NumberField } from "./NumberField";
 import { NormativeSelect } from "./NormativeSelect";
 import { RiggingResultCards } from "./RiggingResultCards";
+import { EquipmentCatalogPicker } from "./EquipmentCatalogPicker";
 
 const GeneratePdfButton = dynamic(
   () => import("./pdf/GeneratePdfButton").then((mod) => mod.GeneratePdfButton),
@@ -347,6 +348,11 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
               invalid={invalidFields.shackleWLLKg}
             />
           </div>
+
+          <EquipmentCatalogPicker
+            onSelectSling={(wllKg) => setField("slingWLLKg")(String(wllKg))}
+            onSelectShackle={(wllKg) => setField("shackleWLLKg")(String(wllKg))}
+          />
         </section>
 
         <section className="flex flex-col gap-4">
