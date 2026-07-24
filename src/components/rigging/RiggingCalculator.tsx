@@ -28,6 +28,11 @@ const GeneratePdfButton = dynamic(
   { ssr: false },
 );
 
+const RiggingDiagram = dynamic(
+  () => import("./diagram/RiggingDiagram").then((mod) => mod.RiggingDiagram),
+  { ssr: false },
+);
+
 type CalculationMode = "length" | "angle";
 
 /**
@@ -496,6 +501,15 @@ export function RiggingCalculator({ plan }: RiggingCalculatorProps) {
           )}
           {input && result && (
             <>
+              <div className="flex justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
+                <RiggingDiagram
+                  baseRadiusM={result.baseRadiusM}
+                  slingAngleDegrees={result.slingAngleDegrees}
+                  totalWeightKg={input.totalWeightKg}
+                  tensionPerLegKg={result.tensionPerLegKg}
+                  status={result.status}
+                />
+              </div>
               <RiggingResultCards
                 result={result}
                 totalWeightKg={input.totalWeightKg}
