@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Rigging Pro AI — Calculadora de ingeniería de izaje";
+export const alt = "RiggerIQ — Calculadora de ingeniería de izaje";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -37,7 +37,7 @@ export default async function OpengraphImage() {
           R
         </div>
         <div style={{ display: "flex", fontSize: 72, fontWeight: 700, letterSpacing: -1 }}>
-          Rigging Pro AI
+          RiggerIQ
         </div>
         <div
           style={{

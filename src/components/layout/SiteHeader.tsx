@@ -8,7 +8,7 @@ export function SiteHeader() {
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-8">
         <Link href="/" className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Rigging Pro AI
+          RiggerIQ
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link

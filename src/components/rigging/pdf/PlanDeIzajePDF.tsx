@@ -144,7 +144,7 @@ export function PlanDeIzajePDF({ input, result, generatedAt }: PlanDeIzajePDFPro
       <Page size="A4" style={styles.page}>
         <View>
           <Text style={styles.headerTitle}>Plan de Izaje Seguro</Text>
-          <Text style={styles.headerSubtitle}>Generado con Rigging Pro AI</Text>
+          <Text style={styles.headerSubtitle}>Generado con RiggerIQ</Text>
         </View>
 
         <View style={styles.headerMetaRow}>
@@ -279,7 +279,7 @@ export function PlanDeIzajePDF({ input, result, generatedAt }: PlanDeIzajePDFPro
         </View>
 
         <Text style={styles.footer} fixed>
-          Documento generado automáticamente por Rigging Pro AI. Debe ser validado por un
+          Documento generado automáticamente por RiggerIQ. Debe ser validado por un
           rigger/prevencionista calificado antes de su uso en terreno.
         </Text>
       </Page>

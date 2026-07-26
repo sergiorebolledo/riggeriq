@@ -1,4 +1,4 @@
-const CACHE_NAME = "rigging-pro-ai-v1";
+const CACHE_NAME = "riggeriq-v1";
 const PRECACHE_URLS = ["/", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {

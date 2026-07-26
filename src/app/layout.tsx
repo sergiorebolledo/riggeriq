@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-const SITE_NAME = "Rigging Pro AI";
+const SITE_NAME = "RiggerIQ";
 const SITE_DESCRIPTION =
   "Calculadora de ingeniería de izaje: ángulos, tensiones, factores de seguridad, peso de cargas y centro de gravedad. Cumple ASME B30.9/B30.26, EN 1492/13889 y NCh/DS 594.";
 
@@ -30,15 +30,18 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   keywords: [
-    "calculadora de izaje",
+    "rigger calculator",
     "rigging calculator",
+    "calculadora de izaje",
     "eslingas",
     "grilletes",
+    "sling angle calculator",
     "factor de seguridad izaje",
     "ASME B30.9",
     "plan de izaje seguro",
     "centro de gravedad carga",
     "calculadora de peso de carga",
+    "rigging engineering",
   ],
   manifest: "/manifest.webmanifest",
   icons: {
