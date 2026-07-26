@@ -129,7 +129,12 @@ src/
 │   └── stripe/                # Facturación
 supabase/migrations/         # Esquema de base de datos
 public/                      # Manifest PWA, iconos, service worker
+docs/PRD.md                  # Documento de requerimientos original
 ```
+
+## 📋 Documento de requerimientos
+
+El documento de requerimientos original que dio forma a este proyecto se conserva en [`docs/PRD.md`](docs/PRD.md), incluyendo la lista completa de librerías de referencia consideradas y notas sobre cuáles se usaron realmente vs. cuáles se reemplazaron por una alternativa nativa.
 
 ## 🗺️ Roadmap / pendientes conocidos
 

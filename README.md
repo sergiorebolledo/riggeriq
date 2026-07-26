@@ -129,7 +129,12 @@ src/
 │   └── stripe/                # Billing
 supabase/migrations/         # Database schema
 public/                      # PWA manifest, icons, service worker
+docs/PRD.md                  # Original requirements document
 ```
+
+## 📋 Requirements document
+
+The original product requirements document that shaped this project is preserved at [`docs/PRD.md`](docs/PRD.md), including the full list of reference libraries considered and notes on which ones were actually used vs. replaced with a native alternative.
 
 ## 🗺️ Roadmap / known gaps
 
